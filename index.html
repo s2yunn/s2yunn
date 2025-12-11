@@ -1,67 +1,488 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NATCHAYADA THAIWONGSAKUL (서윤) - Profile</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            padding: 20px;
-            text-align: center;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 2em;
-            color: #333;
-        }
-        h2 {
-            color: #555;
-            margin-top: 20px;
-        }
-        p, ul {
-            text-align: left;
-            line-height: 1.6;
-            color: #666;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        ul li::before {
-            content: "•";
-            color: #ff6600;
-            font-weight: bold;
-            display: inline-block;
-            width: 1em;
-            margin-left: -1em;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกข้อมูลสมาชิก - สมาคมนักเรียนไทยในสาธารณรัฐเกาหลี</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>NATCHAYADA THAIWONGSAKUL (서윤)</h1>
-        <h2>Introduction</h2>
-        <ul>
-            <li>Fluent in Korean and Thai</li>
-            <li>Proficient in translating, proofreading, and localizing content across different media</li>
-            <li>Specialization in gaming, film, entertainment, tourism, and education industries</li>
-            <li>Experienced in Localization Quality Assurance (LQA)</li>
-        </ul>
-        <h2>About Me</h2>
-        <p>
-            I'm a Korean-Thai translator currently a student at Hankuk University of Foreign Studies (HUFS) pursuing a master's degree in translation. Having worked in a variety of industries, including games, films, entertainment, tourism, music, and education, I am proficient in translating, proofreading, and localizing content across different media. I also bring expertise in Localization Quality Assurance (LQA) to guarantee the best possible quality in each project.
-        </p>
+  <!-- Login Page -->
+  <div id="loginPage" class="page active">
+    <div class="login-container">
+      <h2>ระบบฐานข้อมูลสมาชิก</h2>
+      <p><strong>สมาคมนักเรียนไทยในสาธารณรัฐเกาหลี</strong></p>
+      <p style="font-size: 16px; color: #808080; margin-bottom: 30px;">Thai Student Association in the Republic of Korea (TSAK)</p>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">ชื่อผู้ใช้</label>
+          <input type="text" id="username" name="username" placeholder="กรอกชื่อผู้ใช้" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">รหัสผ่าน</label>
+          <input type="password" id="password" name="password" placeholder="กรอกรหัสผ่าน" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">เข้าสู่ระบบ</button>
+
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #E0E0E0;">
+          <p style="font-size: 13px; color: #808080;">สำหรับทดลอง:</p>
+          <p style="font-size: 13px; color: #000;">Username: <strong>admin</strong></p>
+          <p style="font-size: 13px; color: #000;">Password: <strong>admin123</strong></p>
+        </div>
+      </form>
     </div>
+  </div>
+
+  <!-- Main Application -->
+  <div id="mainApp" style="display: none; flex: 1; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div class="header">
+      <h1>ระบบฐานข้อมูลสมาชิก</h1>
+      <div class="nav-menu">
+        <a href="#" class="nav-link" data-page="membersPage">รายชื่อสมาชิก</a>
+        <a href="#" class="nav-link" data-page="emailPage">อีเมลสมาชิก</a>
+        <a href="#" class="nav-link" data-page="updatePage">สมาชิกที่ต้องอัปเดตข้อมูล</a>
+        <a href="#" class="nav-link" data-page="statisticsPage">สถิติสมาชิก</a>
+        <button id="logoutBtn" class="logout-btn">ออกจากระบบ</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Members Page -->
+      <div id="membersPage" class="page">
+        <div class="container">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="color: #202020; font-size: 28px; margin: 0;">รายชื่อสมาชิก</h2>
+            <button id="addMemberBtn" class="btn btn-secondary">เพิ่มข้อมูลสมาชิก</button>
+          </div>
+
+          <div class="table-container">
+            <table id="membersTable">
+              <thead>
+                <tr>
+                  <th>ลำดับ</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>ระดับการศึกษา</th>
+                  <th>อีเมล</th>
+                  <th>สถานะการศึกษา</th>
+                  <th>สถานะสมาชิก</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="membersTableBody">
+                <!-- Dynamic rows will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+
+          <p style="text-align: center; color: #808080; margin-top: 20px;">
+            <span id="memberCount">0</span> คน
+          </p>
+        </div>
+      </div>
+
+      <!-- Email Page -->
+      <div id="emailPage" class="page">
+        <div class="container">
+          <h2 style="color: #202020; font-size: 28px; margin-bottom: 20px;">อีเมลสมาชิก</h2>
+
+          <!-- Email Menu Tabs -->
+          <div class="email-menu">
+            <button class="email-tab active" data-category="all">สมาชิกทั้งหมด (<span id="allCount">0</span>)</button>
+            <button class="email-tab" data-category="ordinary">สมาชิกสามัญ (<span id="ordinaryCount">0</span>)</button>
+            <button class="email-tab" data-category="associate">สมาชิกวิสามัญ (<span id="associateCount">0</span>)</button>
+          </div>
+
+          <!-- Email Content -->
+          <div class="email-content">
+            <!-- All Members -->
+            <div class="email-category active" id="allEmailSection">
+              <div class="email-category-header">
+                <h3>สมาชิกทั้งหมด</h3>
+                <button class="btn btn-success btn-small" onclick="copyAllEmails('all')">คัดลอกทั้งหมด</button>
+              </div>
+              <div class="email-list" id="allEmailList">
+                <!-- Dynamic emails will be inserted here -->
+              </div>
+            </div>
+
+            <!-- Ordinary Members -->
+            <div class="email-category" id="ordinaryEmailSection">
+              <div class="email-category-header">
+                <h3>สมาชิกสามัญ</h3>
+                <button class="btn btn-success btn-small" onclick="copyAllEmails('ordinary')">คัดลอกทั้งหมด</button>
+              </div>
+              <div class="email-list" id="ordinaryEmailList">
+                <!-- Dynamic emails will be inserted here -->
+              </div>
+            </div>
+
+            <!-- Associate Members -->
+            <div class="email-category" id="associateEmailSection">
+              <div class="email-category-header">
+                <h3>สมาชิกวิสามัญ</h3>
+                <button class="btn btn-success btn-small" onclick="copyAllEmails('associate')">คัดลอกทั้งหมด</button>
+              </div>
+              <div class="email-list" id="associateEmailList">
+                <!-- Dynamic emails will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Page -->
+      <div id="updatePage" class="page">
+        <div class="container">
+          <h2 style="color: #202020; font-size: 28px; margin-bottom: 15px;">สมาชิกที่ต้องอัปเดตข้อมูล</h2>
+
+          <div class="table-container">
+            <table id="updateTable">
+              <thead>
+                <tr>
+                  <th>ลำดับ</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>ระดับการศึกษา</th>
+                  <th>อีเมล</th>
+                  <th>โทรศัพท์</th>
+                  <th>สถานะการศึกษา</th>
+                  <th>สถานะสมาชิก</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="updateTableBody">
+                <!-- Dynamic rows will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+
+          <p style="text-align: center; color: #808080; margin-top: 20px;">
+            <span id="updateCount">0</span> คน
+          </p>
+        </div>
+      </div>
+
+      <!-- Statistics Page -->
+      <div id="statisticsPage" class="page">
+        <div class="container">
+          <h2 style="color: #202020; font-size: 28px; margin-bottom: 15px;">สถิติสมาชิก</h2>
+
+          <!-- Total Members -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-title">จำนวนสมาชิกทั้งหมด</div>
+              <div class="stat-value" id="totalMembersStats">0</div>
+            </div>
+          </div>
+
+          <!-- Education Level Statistics -->
+          <div class="stats-grid">
+            <div class="stat-card red-border">
+              <div class="stat-title">ระดับการศึกษา</div>
+              <div class="stat-chart" id="educationStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Status Statistics -->
+            <div class="stat-card green-border">
+              <div class="stat-title">สถานภาพการศึกษา</div>
+              <div class="stat-chart" id="statusStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Member Status Statistics -->
+            <div class="stat-card">
+              <div class="stat-title">สถานะสมาชิก</div>
+              <div class="stat-chart" id="memberStatusStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Funding Type Statistics -->
+            <div class="stat-card">
+              <div class="stat-title">ช่องทางการศึกษาต่อที่เกาหลี</div>
+              <div class="stat-chart" id="fundingTypeStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Scholarships Statistics -->
+          <div class="stats-grid">
+            <div class="stat-card red-border">
+              <div class="stat-title">ทุนการศึกษา</div>
+              <div class="stat-chart" id="scholarshipStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Universities Statistics -->
+            <div class="stat-card">
+              <div class="stat-title">มหาวิทยาลัย</div>
+              <div class="stat-chart" id="universityStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Regions Statistics -->
+            <div class="stat-card green-border">
+              <div class="stat-title">ภูมิภาค</div>
+              <div class="stat-chart" id="regionStats">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Detail Modal -->
+  <div id="memberModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">รายละเอียดสมาชิก</h2>
+        <button class="close-btn" onclick="closeMemberModal()">&times;</button>
+      </div>
+
+      <div id="memberDetailView" style="display: none;">
+        <!-- Dynamic detail content -->
+      </div>
+
+      <div id="memberFormView" style="display: none;">
+        <form id="memberForm">
+          <!-- Section 1: Recording Date -->
+          <div class="form-section">
+            <h3>ข้อมูลการลงบันทึก</h3>
+            <p style="color: #808080; font-size: 15px; margin-bottom: 15px; margin-top: 2px;">(วันที่บันทึกข้อมูล = วันที่บุคคลดังกล่าวเป็นสมาชิกของสมาคมอย่างเป็นทางการ)</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="recordDate">วันที่เจ้าหน้าที่บันทึกข้อมูล</label>
+                <input type="date" id="recordDate" name="recordDate" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Personal Information -->
+          <div class="form-section">
+            <h3>ข้อมูลส่วนบุคคล</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="dateOfBirth">วัน/เดือน/ปีเกิด (YYYY-MM-DD)</label>
+                <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+              </div>
+
+              <div class="form-group">
+                <label for="titlePrefix">คำนำหน้าชื่อ</label>
+                <select id="titlePrefix" name="titlePrefix" required>
+                  <option value="">-- เลือก --</option>
+                  <option value="นาย">นาย</option>
+                  <option value="นางสาว">นางสาว</option>
+                  <option value="นาง">นาง</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="thaiName">ชื่อ-สกุล (ภาษาไทย)</label>
+                <input type="text" id="thaiName" name="thaiName" placeholder="เช่น สมชาย ใจดี" required>
+              </div>
+
+              <div class="form-group">
+                <label for="thaiNickname">ชื่อเล่น (ภาษาไทย)</label>
+                <input type="text" id="thaiNickname" name="thaiNickname" placeholder="เช่น ชาย">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="englishName">ชื่อ-สกุล (ภาษาอังกฤษ)</label>
+                <input type="text" id="englishName" name="englishName" placeholder="e.g. Somchai Jaidee" required>
+              </div>
+
+              <div class="form-group">
+                <label for="englishNickname">ชื่อเล่น (ภาษาอังกฤษ)</label>
+                <input type="text" id="englishNickname" name="englishNickname" placeholder="e.g. Chai">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Contact Information -->
+          <div class="form-section">
+            <h3>ข้อมูลติดต่อ</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="countryCode">รหัสประเทศ</label>
+                <select id="countryCode" name="countryCode" required>
+                  <option value="+82">+82 (เกาหลีใต้)</option>
+                  <option value="+66">+66 (ไทย)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="phone">หมายเลขโทรศัพท์ที่ติดต่อได้</label>
+                <input type="tel" id="phone" name="phone" placeholder="000-0000-0000" required>
+              </div>
+
+              <div class="form-group">
+                <label for="email">อีเมลที่ติดต่อได้</label>
+                <input type="email" id="email" name="email" placeholder="example@email.com" required>
+              </div>
+            </div>
+
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="address">ที่อยู่ปัจจุบัน</label>
+                <textarea id="address" name="address" placeholder="กรอกที่อยู่ปัจจุบัน" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Student Status -->
+          <div class="form-section">
+            <h3>สถานภาพนักเรียน</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="studentStatus">สถานภาพล่าสุด</label>
+                <select id="studentStatus" name="studentStatus" required>
+                  <option value="">-- เลือก --</option>
+                  <option value="degree">เป็น/เคยเป็นนักเรียนระดับชั้นปริญญา</option>
+                  <option value="language">เป็น/เคยเป็นนักเรียนภาษา</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="degreeFields" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="educationLevel">ระดับการศึกษา</label>
+                  <select id="educationLevel" name="educationLevel">
+                    <option value="">-- เลือก --</option>
+                    <option value="ปริญญาตรี">ปริญญาตรี</option>
+                    <option value="ปริญญาโท">ปริญญาโท</option>
+                    <option value="ปริญญาเอก">ปริญญาเอก</option>
+                    <option value="อนุปริญญา">อนุปริญญา</option>
+                    <option value="Research Student">Research Student</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row full">
+                <div class="form-group">
+                  <label for="major">สาขาวิชาที่ศึกษา</label>
+                  <input type="text" id="major" name="major" placeholder="เช่น Computer Science">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Education Details -->
+          <div class="form-section">
+            <h3>ข้อมูลการศึกษา</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="completionDate">วันที่สำเร็จการศึกษา</label>
+                <input type="date" id="completionDate" name="completionDate" required>
+              </div>
+
+              <div class="form-group">
+                <label for="university">มหาวิทยาลัย</label>
+                <input type="text" id="university" name="university" placeholder="e.g. Seoul National University" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 6: Status -->
+          <div class="form-section">
+            <h3>สถานะ</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="status">สถานะ</label>
+                <input type="text" id="status" name="status" readonly style="background-color: #f0f0f0;">
+              </div>
+
+              <div class="form-group">
+                <label for="memberStatus">สถานะสมาชิก</label>
+                <input type="text" id="memberStatus" name="memberStatus" readonly style="background-color: #f0f0f0;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 7: Additional Information -->
+          <div class="form-section">
+            <h3>ข้อมูลเพิ่มเติม</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fundingType">ช่องทางการศึกษาต่อที่เกาหลี</label>
+                <select id="fundingType" name="fundingType" required>
+                  <option value="">-- เลือก --</option>
+                  <option value="ทุนส่วนตัว">ทุนส่วนตัว</option>
+                  <option value="ทุนการศึกษา">ทุนการศึกษา</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="scholarshipField" style="display: none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="scholarship">ชื่อโครงการ/ทุนการศึกษา</label>
+                  <input type="text" id="scholarship" name="scholarship" placeholder="เช่น Global Korea Scholarship">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="region">ภูมิภาค</label>
+                <select id="region" name="region" required>
+                  <option value="">-- เลือก --</option>
+                  <option value="서울특별시 (โซล)">서울특별시 (โซล)</option>
+                  <option value="부산광역시 (ปูซาน)">부산광역시 (ปูซาน)</option>
+                  <option value="울산광역시 (อุลซาน)">울산광역시 (อุลซาน)</option>
+                  <option value="인천광역시 (อินชอน)">인천광역시 (อินชอน)</option>
+                  <option value="세종특별자치시 (เซจง)">세종특별자치시 (เซจง)</option>
+                  <option value="충청북도 (ชุงช็องเหนือ)">충청북도 (ชุงช็องเหนือ)</option>
+                  <option value="충청남도 (ชุงช็องใต้)">충청남도 (ชุงช็องใต้)</option>
+                  <option value="강원특별자치도 (คังว็อน)">강원특별자치도 (คังว็อน)</option>
+                  <option value="경기도 (คย็องกี)">경기도 (คย็องกี)</option>
+                  <option value="경상북도 (คย็องซังเหนือ)">경상북도 (คย็องซังเหนือ)</option>
+                  <option value="경상남도 (คย็องซังใต้)">경상남도 (คย็องซังใต้)</option>
+                  <option value="전북특별자치도 (ช็อนบุก)">전북특별자치도 (ช็อนบุก)</option>
+                  <option value="전라남도 (ช็อนนัม)">전라남도 (ช็อนนัม)</option>
+                  <option value="제주특별자치도 (เชจู)">제주특별자치도 (เชจู)</option>
+                  <option value="ไทย">ไทย</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row full">
+              <div class="form-group">
+                <label for="certificateLink">เอกสารรับรอง (ลิงก์ Google Drive)</label>
+                <input type="url" id="certificateLink" name="certificateLink" placeholder="https://drive.google.com/..." required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button type="submit" class="btn btn-success" style="flex: 1;">บันทึกข้อมูล</button>
+            <button type="button" class="btn btn-outline" onclick="closeMemberModal()" style="flex: 1;">ยกเลิก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/events.js"></script>
 </body>
 </html>
