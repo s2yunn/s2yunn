@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สมาคมนักเรียนไทยในเกาหลี - ระบบจัดการข้อมูลสมาชิก</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #1e3a8a;
+      --secondary-color: #fbbf24;
+      --accent-color: #10b981;
+      --dark-color: #1f2937;
+      --light-color: #f3f4f6;
+      --border-color: #e5e7eb;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--dark-color);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+      color: white;
+      padding: 60px 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    header .subtitle {
+      font-size: 1.2em;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    header .description {
+      font-size: 1.1em;
+      opacity: 0.8;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--light-color);
+      padding: 20px;
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: var(--primary-color);
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      border: 2px solid transparent;
+    }
+
+    nav a:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* Main Content */
+    main {
+      padding: 60px 40px;
+    }
+
+    section {
+      margin-bottom: 60px;
+    }
+
+    section h2 {
+      font-size: 2em;
+      color: var(--primary-color);
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid var(--secondary-color);
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.1), rgba(16, 185, 129, 0.1));
+      padding: 30px;
+      border-radius: 10px;
+      border-left: 5px solid var(--primary-color);
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+      border-left-color: var(--accent-color);
+    }
+
+    .feature-card h3 {
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .feature-card p {
+      color: #666;
+      line-height: 1.8;
+    }
+
+    .feature-icon {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+    }
+
+    /* Tech Stack */
+    .tech-stack {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .tech-item {
+      background: var(--light-color);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .tech-item:hover {
+      border-color: var(--primary-color);
+      background: white;
+      transform: scale(1.05);
+    }
+
+    .tech-item strong {
+      color: var(--primary-color);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .tech-item span {
+      color: #666;
+      font-size: 0.95em;
+    }
+
+    /* Demo Section */
+    .demo-section {
+      background: var(--light-color);
+      padding: 40px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .demo-section h3 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .demo-credentials {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--accent-color);
+      display: inline-block;
+    }
+
+    .demo-credentials p {
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+    }
+
+    .demo-credentials strong {
+      color: var(--primary-color);
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.3s ease;
+      text-align: center;
+      min-width: 150px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(30, 58, 138, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--secondary-color);
+      color: var(--dark-color);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(251, 191, 36, 0.3);
+    }
+
+    .btn-success {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Screenshots */
+    .screenshots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .screenshot-item {
+      background: var(--light-color);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .screenshot-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .screenshot-item h4 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .screenshot-item p {
+      color: #666;
+      font-size: 0.95em;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--dark-color);
+      color: white;
+      text-align: center;
+      padding: 40px;
+      margin-top: 60px;
+    }
+
+    footer p {
+      margin: 8px 0;
+      opacity: 0.9;
+    }
+
+    .footer-links {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--secondary-color);
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      header {
+        padding: 40px 20px;
+      }
+
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      main {
+        padding: 40px 20px;
+      }
+
+      section h2 {
+        font-size: 1.5em;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        flex-direction: column;
+      }
+
+      nav a {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    section {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .feature-card {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .feature-card:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .feature-card:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    .feature-card:nth-child(4) {
+      animation-delay: 0.6s;
+    }
+
+    .feature-card:nth-child(5) {
+      animation-delay: 0.8s;
+    }
+
+    .feature-card:nth-child(6) {
+      animation-delay: 1s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>📋 ระบบจัดการข้อมูลสมาชิก</h1>
+      <p class="subtitle">สมาคมนักเรียนไทยในสาธารณรัฐเกาหลี</p>
+      <p class="description">Thai Student Association in the Republic of Korea (TSAK)</p>
+      <p class="description" style="margin-top: 15px; font-size: 1em; opacity: 0.7;">ระบบประชาสัมพันธ์และบันทึกข้อมูลสมาชิกแบบเต็มรูปแบบ</p>
+    </header>
+
+    <!-- Navigation -->
+    <nav>
+      <a href="#features">✨ ฟีเจอร์</a>
+      <a href="#tech">🛠️ เทคโนโลยี</a>
+      <a href="#demo">🚀 ลองใช้ได้เลย</a>
+      <a href="#screenshots">📸 ภาพหน้าจอ</a>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Features Section -->
+      <section id="features">
+        <h2>✨ ฟีเจอร์หลักของระบบ</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>ระบบล็อกอิน</h3>
+            <p>รักษาความปลอดภัยข้อมูลด้วยระบบล็อกอินแบบ secure เฉพาะเจ้าหน้าที่สามารถเข้าใช้ได้</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3>รายชื่อสมาชิก</h3>
+            <p>แสดงตารางรายชื่อสมาชิกทั้งหมดพร้อมฟัง​ชันค้นหา ดูรายละเอียด และแก้ไขข้อมูล</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">➕</div>
+            <h3>เพิ่มสมาชิกใหม่</h3>
+            <p>ฟอร์มครอบคลุมพร้อมฟิลด์อากาศแบบไดนามิก validation และการจัดการข้อมูลอัตโนมัติ</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📧</div>
+            <h3>รวมอีเมล</h3>
+            <p>แสดงรวมอีเมลของสมาชิกแยกตามประเภท (ทั้งหมด สามัญ วิสามัญ) พร้อมคัดลอกได้ทันที</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>สถิติสมาชิก</h3>
+            <p>แสดงสถิติอย่างละเอียด: สถานะการศึกษา ระดับการศึกษา ปีที่สำเร็จ และการจัดกลุ่มตามภูมิภาค</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📥</div>
+            <h3>นำเข้า Excel</h3>
+            <p>รองรับการนำเข้าข้อมูลจำนวนมากจากไฟล์ Excel พร้อมตัวอย่างและการยืนยัน</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">⚙️</div>
+            <h3>Auto-calculation</h3>
+            <p>คำนวณสถานะสมาชิกอัตโนมัติตามวันที่สำเร็จการศึกษา</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3>สตัตัสอัพเดต</h3>
+            <p>หน้าเฉพาะสำหรับติดตามสมาชิกที่ต้องอัปเดตข้อมูลตามการเปลี่ยนแปลงสถานะ</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">💾</div>
+            <h3>บันทึกอัตโนมัติ</h3>
+            <p>ข้อมูลบันทึกอัตโนมัติใน LocalStorage ไม่ต้องเซิร์ฟเวอร์</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tech Stack Section -->
+      <section id="tech">
+        <h2>🛠️ เทคโนโลยีที่ใช้</h2>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <strong>HTML5</strong>
+            <span>Semantic markup</span>
+          </div>
+          <div class="tech-item">
+            <strong>CSS3</strong>
+            <span>Responsive design & animations</span>
+          </div>
+          <div class="tech-item">
+            <strong>JavaScript</strong>
+            <span>Vanilla JS (ไม่มี framework)</span>
+          </div>
+          <div class="tech-item">
+            <strong>JSON</strong>
+            <span>Data management</span>
+          </div>
+          <div class="tech-item">
+            <strong>LocalStorage</strong>
+            <span>Client-side data persistence</span>
+          </div>
+          <div class="tech-item">
+            <strong>XLSX (Excel)</strong>
+            <span>Bulk data import support</span>
+          </div>
+          <div class="tech-item">
+            <strong>FormData</strong>
+            <span>Advanced form handling</span>
+          </div>
+          <div class="tech-item">
+            <strong>Canvas API</strong>
+            <span>Chart visualization</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Demo Section -->
+      <section id="demo">
+        <div class="demo-section">
+          <h3>🚀 ลองใช้ระบบได้เลย!</h3>
+          <p style="margin-bottom: 20px; color: #666;">ใช้ข้อมูลการเข้าสู่ระบบข้างล่างนี้เพื่อลองใช้ทุกฟีเจอร์</p>
+          
+          <div class="demo-credentials">
+            <p>👤 Username: <strong>admin</strong></p>
+            <p>🔑 Password: <strong>admin123</strong></p>
+          </div>
+
+          <div class="btn-group">
+            <a href="./index.html" class="btn btn-primary">🌐 เข้าไปใช้ระบบ</a>
+            <a href="./sample-data.json" class="btn btn-secondary" download>📥 ดาวน์โหลด Sample Data</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screenshots Section -->
+      <section id="screenshots">
+        <h2>📸 ภาพหน้าจอของระบบ</h2>
+        <div class="screenshots">
+          <div class="screenshot-item">
+            <h4>🔐 หน้าล็อกอิน</h4>
+            <p>หน้าแรกของระบบที่มีการป้องกันด้วยชื่อผู้ใช้และรหัสผ่าน เพื่อความปลอดภัยของข้อมูล</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>👥 รายชื่อสมาชิก</h4>
+            <p>แสดงตารางรายชื่อสมาชิกทั้งหมด พร้อมฟังก์ชันค้นหา แสดงรายละเอียด และแก้ไขข้อมูล</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>➕ เพิ่มสมาชิกใหม่</h4>
+            <p>ฟอร์มที่รองรับการเพิ่มสมาชิกใหม่ด้วยฟิลด์ที่ปรับตัวตามประเภทของสมาชิก</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>📧 รวมอีเมล</h4>
+            <p>แสดงรวมอีเมลของสมาชิกแยกตามประเภท พร้อมปุ่มคัดลอกและส่งอีเมล</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>📊 สถิติสมาชิก</h4>
+            <p>แสดงสถิติอย่างละเอียด ด้วยแผนภูมิและข้อมูลแยกตามหลายมิติ</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>📥 นำเข้าข้อมูล</h4>
+            <p>รองรับการนำเข้าข้อมูลจากไฟล์ Excel พร้อมตัวอย่างข้อมูลก่อนนำเข้า</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>🔄 อัปเดตสถานะ</h4>
+            <p>หน้าเฉพาะสำหรับติดตามสมาชิกที่ต้องอัปเดตข้อมูลตามการเปลี่ยนแปลง</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>💾 บันทึกอัตโนมัติ</h4>
+            <p>ข้อมูลบันทึกอัตโนมัติในเบราว์เซอร์ ไม่สูญหายแม้ปิดเบราว์เซอร์</p>
+          </div>
+
+          <div class="screenshot-item">
+            <h4>🎨 UI/UX ที่ดี</h4>
+            <p>ออกแบบมาให้ใช้งานง่าย สวยงาม และตอบสนองได้บนทุกอุปกรณ์</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- How to Use Section -->
+      <section>
+        <h2>📖 วิธีการใช้งาน</h2>
+        <div style="background: var(--light-color); padding: 30px; border-radius: 10px; line-height: 1.8;">
+          <h3 style="color: var(--primary-color); margin-bottom: 15px;">ขั้นตอนการใช้งาน:</h3>
+          <ol style="margin-left: 20px; color: #666;">
+            <li><strong>เข้าสู่ระบบ:</strong> ใช้ username: admin และ password: admin123</li>
+            <li><strong>ดูรายชื่อสมาชิก:</strong> ไปที่หน้า "รายชื่อสมาชิก" เพื่อดูข้อมูลทั้งหมด พร้อมค้นหา</li>
+            <li><strong>ดูรายละเอียด:</strong> คลิกที่แถวสมาชิกใดๆ เพื่อดูข้อมูลครบถ้วน</li>
+            <li><strong>เพิ่มสมาชิกใหม่:</strong> คลิกปุ่ม "เพิ่มสมาชิก" และกรอกข้อมูลตามต้องการ</li>
+            <li><strong>แก้ไขข้อมูล:</strong> คลิก "แก้ไข" จากรายละเอียดสมาชิก</li>
+            <li><strong>ดูรายชื่ออีเมล:</strong> ไปที่หน้า "อีเมลสมาชิก" เพื่อรวบรวมอีเมล</li>
+            <li><strong>ตรวจสอบสถิติ:</strong> ไปที่หน้า "สถิติสมาชิก" เพื่อดูการวิเคราะห์ข้อมูล</li>
+            <li><strong>นำเข้าข้อมูล:</strong> ใช้ปุ่ม "นำเข้า Excel" เพื่อเพิ่มข้อมูลจากไฟล์ Excel</li>
+            <li><strong>ติดตามอัปเดต:</strong> ไปที่หน้า "สมาชิกที่ต้องอัปเดต" เพื่อดูคนที่ต้องแก้ไขข้อมูล</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Installation Section -->
+      <section>
+        <h2>💻 การติดตั้งและการใช้งาน</h2>
+        <div style="background: var(--light-color); padding: 30px; border-radius: 10px;">
+          <h3 style="color: var(--primary-color); margin-bottom: 15px;">ขั้นตอนการติดตั้ง:</h3>
+          
+          <p style="margin-bottom: 20px; color: #666;">
+            <strong>1. Clone repository:</strong><br>
+            <code style="background: white; padding: 10px; border-radius: 5px; display: block; margin: 10px 0; font-family: 'Courier New', monospace;">
+              git clone https://github.com/s2yunn/s2yunn.git
+            </code>
+          </p>
+          
+          <p style="margin-bottom: 20px; color: #666;">
+            <strong>2. เปิดไฟล์ index.html:</strong><br>
+            <code style="background: white; padding: 10px; border-radius: 5px; display: block; margin: 10px 0; font-family: 'Courier New', monospace;">
+              เปิดไฟล์ index.html ด้วยเบราว์เซอร์ (ไม่ต้องการเซิร์ฟเวอร์)
+            </code>
+          </p>
+
+          <p style="color: #666;">
+            <strong>3. หรือใช้ HTTP Server (ถ้าต้องการ):</strong><br>
+            <code style="background: white; padding: 10px; border-radius: 5px; display: block; margin: 10px 0; font-family: 'Courier New', monospace;">
+              python3 -m http.server 8000
+            </code>
+          </p>
+
+          <div style="margin-top: 20px; padding: 15px; background: white; border-left: 4px solid var(--accent-color); border-radius: 5px;">
+            <strong style="color: var(--primary-color);">💡 หมายเหตุ:</strong><br>
+            <p style="color: #666; margin: 10px 0 0;">โปรเจคนี้เป็น Static Site ที่ไม่ต้องการ Backend หรือฐานข้อมูลเซิร์ฟเวอร์ ข้อมูลทั้งหมดจะเก็บไว้ในเบราว์เซอร์ของคุณ (LocalStorage) ดังนั้นจึงมีความปลอดภัยสูง และไม่ต้องเก็บข้อมูลที่ใดก็ได้นอกเบราว์เซอร์</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Detail -->
+      <section>
+        <h2>🎯 ความสามารถเพิ่มเติม</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>ระบบค้นหา</h3>
+            <p>ค้นหาสมาชิกแบบ real-time ด้วยชื่อ โทรศัพท์ อีเมล หรือมหาวิทยาลัย</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📤</div>
+            <h3>Export ข้อมูล</h3>
+            <p>ส่งออกข้อมูลเป็นรูปแบบต่างๆ เพื่อนำไปใช้กับโปรแกรมอื่นๆ</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📋</div>
+            <h3>ฟิลด์ที่ครอบคลุม</h3>
+            <p>รองรับข้อมูล 20+ ฟิลด์ รวมบัญชีการศึกษา ทั่วไป และข้อมูลการติดต่อ</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">✅</div>
+            <h3>Validation อัจฉริยะ</h3>
+            <p>ตรวจสอบข้อมูลอัตโนมัติ และแสดงข้อความแนะนำที่ชัดเจน</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🌍</div>
+            <h3>รองรับหลายภาษา</h3>
+            <p>สนับสนุนการป้อนข้อมูลเป็นภาษาไทย อังกฤษ และรหัสประเทศหลายประเทศ</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3>Performance ที่ดี</h3>
+            <p>โหลดเร็ว เนื่องจากเป็น Static Site ไม่ต้องเชื่อมต่อเซิร์ฟเวอร์</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>Responsive Design</h3>
+            <p>ใช้ได้ดีบนมือถือ แท็บเล็ต และคอมพิวเตอร์ทุกขนาด</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Data Privacy</h3>
+            <p>ข้อมูลทั้งหมดเก็บไว้ในเบราว์เซอร์ของคุณ ไม่มีการส่งขึ้นเซิร์ฟเวอร์</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>ระบบการแจ้งเตือน</h3>
+            <p>ระบบ Toast แสดงการทำงาน ความสำเร็จ และข้อผิดพลาดอย่างชัดเจน</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p><strong>Thai Student Association in Korea (TSAK)</strong></p>
+      <p>📍 Republic of Korea | 📧 ติดต่อสมาคม</p>
+      <p style="margin-top: 20px; font-size: 0.95em;">ระบบจัดการข้อมูลสมาชิก © 2024</p>
+      <div class="footer-links">
+        <a href="#features">ฟีเจอร์</a>
+        <a href="#tech">เทคโนโลยี</a>
+        <a href="./README.md">Documentation</a>
+        <a href="https://github.com/s2yunn/s2yunn" target="_blank">GitHub</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

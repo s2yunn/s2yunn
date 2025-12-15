@@ -1,5 +1,22 @@
 // ========== UI Management ==========
 
+// Helper function to get education level display text
+function getEducationLevelDisplay(member) {
+  // ถ้าเป็น/เคยเป็นนักเรียนภาษา ให้แสดง "นักเรียนภาษา"
+  if (member.studentStatus === 'เป็น/เคยเป็นนักเรียนภาษา' || member.studentStatus === 'language') {
+    return 'นักเรียนภาษา';
+  }
+
+  // กรณีอื่น ใช้ค่าเดิมของ educationLevel ถ้ามี
+  const value = member.educationLevel ?? '';
+  if (value && value.trim() !== '' && value !== '-') {
+    return value.trim();
+  }
+
+  // ถ้าไม่มีข้อมูลจริง ๆ ให้แสดง '-'
+  return '-';
+}
+
 // Show Validation Error Modal
 function showValidationErrorModal(errors) {
   // Create a temporary modal for displaying errors
@@ -94,7 +111,7 @@ function renderMembersTable() {
           <div class="name-col">${member.titlePrefix} ${member.thaiName}</div>
           <div class="name-sub">${member.englishName}</div>
         </td>
-        <td>${member.educationLevel || '-'}</td>
+        <td>${getEducationLevelDisplay(member)}</td>
         <td>${member.email || '-'}</td>
         <td>${member.status || 'ไม่ทราบข้อมูล'}</td>
         <td>${member.memberStatus || '-'}</td>
@@ -113,36 +130,15 @@ function renderMembersTable() {
 // Render Update Page - Members who graduated in current year
 function renderUpdatePage() {
   const members = db.getAllMembers();
-  const currentYear = new Date().getFullYear();
   
-  // Filter members who graduated in current year
-  const membersToUpdate = members.filter(member => {
-    if (!member.completionDate) return false;
-    
-    // Don't show if already confirmed
-    if (member.statusConfirmed) {
-      return false;
-    }
-    
-    const completionDate = new Date(member.completionDate);
-    const completionYear = completionDate.getFullYear();
-    const calculatedStatus = db.calculateStatus(member.completionDate);
-    
-    // Check if graduated in current year
-    const graduatedThisYear = (
-      calculatedStatus === 'สำเร็จการศึกษา' && 
-      completionYear === currentYear
-    );
-    
-    // Mark members who graduated this year (if not already marked)
-    if (graduatedThisYear && !member.statusChangedYear) {
-      member.statusChangedYear = currentYear;
-      db.addMember(member); // Save the year marker
-    }
-    
-    // Show if has statusChangedYear marker for current year
-    return member.statusChangedYear === currentYear;
+  // Calculate update reasons for all members
+  const membersWithReasons = members.map(member => {
+    const updateReasons = db.calculateUpdateReasons(member, members);
+    return { ...member, updateReasons };
   });
+
+  // Filter members who need updates (has at least one reason)
+  const membersToUpdate = membersWithReasons.filter(m => m.updateReasons.length > 0);
 
   // Sort by recordDate
   const sortedMembers = [...membersToUpdate].sort((a, b) => {
@@ -155,11 +151,11 @@ function renderUpdatePage() {
   tbody.innerHTML = '';
 
   if (sortedMembers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px;">ไม่มีสมาชิกที่ต้องอัปเดตข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px;">ไม่มีสมาชิกที่ต้องอัปเดตข้อมูล</td></tr>';
   } else {
     sortedMembers.forEach((member, index) => {
       const row = document.createElement('tr');
-      const educationLevel = member.studentStatus === 'language' ? 'นักเรียนภาษา' : (member.educationLevel || '-');
+      const educationLevel = getEducationLevelDisplay(member);
       const phone = member.countryCode ? `(${member.countryCode}) ${member.phone}` : member.phone;
       
       // Display current status
@@ -171,6 +167,13 @@ function renderUpdatePage() {
       // Check if status needs update
       const statusNeedsUpdate = currentStatus !== calculatedStatus;
       
+      // Format update reasons
+      const reasonsText = member.updateReasons.join(', ');
+      const hasDuplicateReason = member.updateReasons.some(r => r === 'รายชื่อซ้ำ');
+      
+      // ตรวจสอบว่าต้องแสดงปุ่ม "ยืนยัน" หรือไม่ (จาก flag needsGraduationConfirm)
+      const hasGraduationStatusChange = member.needsGraduationConfirm === true;
+      
       row.innerHTML = `
         <td><strong>${index + 1}</strong></td>
         <td>
@@ -180,6 +183,7 @@ function renderUpdatePage() {
         <td>${educationLevel}</td>
         <td>${member.email || '-'}</td>
         <td>${phone || '-'}</td>
+        <td style="max-width: 300px; font-size: 13px; line-height: 1.5;">${reasonsText}</td>
         <td>
           ${statusNeedsUpdate ? `
             <span style="color: #A51D2C; font-weight: 600;">${currentStatus}</span>
@@ -199,8 +203,13 @@ function renderUpdatePage() {
           `}
         </td>
         <td>
+          ${hasDuplicateReason ? `
+            <button class="btn btn-small btn-warning" onclick="showDuplicateMembers('${member.id}')" style="margin-bottom: 5px; width: 100%;">ดูรายชื่อซ้ำ</button>
+          ` : ''}
           <button class="btn btn-small btn-secondary" onclick="editMember('${member.id}')">แก้ไข</button>
-          <button class="btn btn-small btn-success" onclick="confirmStatusUpdate('${member.id}')">ยืนยัน</button>
+          ${hasGraduationStatusChange ? `
+            <button class="btn btn-small btn-success" onclick="confirmStatusUpdate('${member.id}')" style="margin-top: 5px; width: 100%;">ยืนยัน</button>
+          ` : ''}
         </td>
       `;
       tbody.appendChild(row);
@@ -220,7 +229,11 @@ function confirmStatusUpdate(memberId) {
     member.status = db.calculateStatus(member.completionDate);
     member.memberStatus = db.calculateMemberStatus(member.status);
     
-    // Mark as confirmed and remove the status change marker
+    // เคลียร์ flag needsGraduationConfirm และบันทึกเวลาที่ยืนยัน
+    member.needsGraduationConfirm = false;
+    member.graduationConfirmedAt = new Date().toISOString();
+    
+    // ลบ marker เก่าออก (ถ้ามี)
     member.statusConfirmed = true;
     delete member.statusChangedYear;
     
@@ -233,8 +246,96 @@ function confirmStatusUpdate(memberId) {
     renderEmailPage();
     renderStatisticsPage();
     
-    alert('ยืนยันข้อมูลเรียบร้อยแล้ว');
+    showToast('ยืนยันข้อมูลเรียบร้อยแล้ว', 'success');
   }
+}
+
+// Show Duplicate Members Modal
+let currentDuplicateGroupMembers = [];
+let selectedDuplicatesToDelete = new Set();
+
+function showDuplicateMembers(memberId) {
+  const member = db.getMember(memberId);
+  if (!member) return;
+
+  const allMembers = db.getAllMembers();
+  currentDuplicateGroupMembers = db.getDuplicateGroup(member, allMembers);
+  selectedDuplicatesToDelete.clear();
+
+  const tbody = document.getElementById('duplicateMembersTableBody');
+  tbody.innerHTML = '';
+
+  currentDuplicateGroupMembers.forEach((m, index) => {
+    const row = document.createElement('tr');
+    
+    // คำนวณวัน-เวลาที่อัปโหลด (เวลาที่รายชื่อถูกเพิ่มเข้าระบบ)
+    const formattedUploadDate = m.uploadedAt ? formatUploadDateKST(m.uploadedAt) : '-';
+    
+    row.innerHTML = `
+      <td style="text-align: center;">
+        <input type="checkbox" 
+               id="dup_${m.id}" 
+               onchange="toggleDuplicateSelection('${m.id}')"
+               style="width: 18px; height: 18px; cursor: pointer;">
+      </td>
+      <td style="text-align: center;"><strong>${index + 1}</strong></td>
+      <td>${m.titlePrefix} ${m.thaiName}</td>
+      <td>${m.englishName}</td>
+      <td>${formatDate(m.dateOfBirth)}</td>
+      <td>${m.email || '-'}</td>
+      <td>${m.countryCode ? `(${m.countryCode}) ` : ''}${m.phone || '-'}</td>
+      <td>${formattedUploadDate}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById('duplicateMembersModal').style.display = 'block';
+}
+
+function toggleDuplicateSelection(memberId) {
+  if (selectedDuplicatesToDelete.has(memberId)) {
+    selectedDuplicatesToDelete.delete(memberId);
+  } else {
+    selectedDuplicatesToDelete.add(memberId);
+  }
+}
+
+function closeDuplicateMembersModal() {
+  document.getElementById('duplicateMembersModal').style.display = 'none';
+  currentDuplicateGroupMembers = [];
+  selectedDuplicatesToDelete.clear();
+}
+
+function confirmDeleteDuplicates() {
+  if (selectedDuplicatesToDelete.size === 0) {
+    showToast('กรุณาเลือกรายชื่อที่ต้องการลบ', 'warning');
+    return;
+  }
+
+  // Check if trying to delete all members
+  if (selectedDuplicatesToDelete.size >= currentDuplicateGroupMembers.length) {
+    showToast('ไม่สามารถลบรายชื่อทั้งหมดได้ กรุณาเก็บรายชื่อไว้อย่างน้อย 1 รายการ', 'warning');
+    return;
+  }
+
+  const count = selectedDuplicatesToDelete.size;
+  if (!confirm(`ยืนยันการลบรายชื่อที่เลือก ${count} รายการ?`)) {
+    return;
+  }
+
+  // Delete selected members
+  selectedDuplicatesToDelete.forEach(id => {
+    db.deleteMember(id);
+  });
+
+  // Close modal and refresh
+  closeDuplicateMembersModal();
+  renderUpdatePage();
+  renderMembersTable();
+  renderEmailPage();
+  renderStatisticsPage();
+  
+  showToast(`ลบรายชื่อซ้ำสำเร็จ ${count} รายการ`, 'success');
 }
 
 
@@ -251,6 +352,9 @@ function viewMemberDetail(memberId) {
   document.getElementById('modalTitle').textContent = 'รายละเอียดสมาชิก';
 
   const detailHTML = `
+    <div style="background-color: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 20px; text-align: center; color: #666;">
+      <small>วันที่บันทึกข้อมูล: ${formatDate(member.recordDate)}</small>
+    </div>
     <div class="detail-row">
       <div class="detail-label">ชื่อ-นามสกุล (ภาษาไทย):</div>
       <div class="detail-value">${member.titlePrefix} ${member.thaiName}</div>
@@ -346,14 +450,34 @@ function editMember(memberId) {
   const formView = document.getElementById('memberFormView');
   const detailView = document.getElementById('memberDetailView');
   
+  console.log('🔍 [editMember] Member data:', member);
+  console.log('🔍 [editMember] studentStatus:', member?.studentStatus);
+  console.log('🔍 [editMember] fundingType:', member?.fundingType);
+  
   detailView.style.display = 'none';
   formView.style.display = 'block';
   document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลสมาชิก';
 
   if (member) {
+    // Normalize studentStatus value (แปลงข้อความเต็มเป็นค่าสั้น)
+    let normalizedStudentStatus = member.studentStatus || '';
+    if (normalizedStudentStatus === 'เป็น/เคยเป็นนักเรียนระดับชั้นปริญญา') {
+      normalizedStudentStatus = 'degree';
+    } else if (normalizedStudentStatus === 'เป็น/เคยเป็นนักเรียนภาษา') {
+      normalizedStudentStatus = 'language';
+    }
+    
+    // Normalize fundingType value (แปลงข้อความเก่าเป็นข้อความใหม่)
+    let normalizedFundingType = member.fundingType || '';
+    if (normalizedFundingType === 'ได้รับทุนการศึกษา') {
+      normalizedFundingType = 'ทุนการศึกษา';
+    } else if (normalizedFundingType === 'ใช้เงินส่วนตัว') {
+      normalizedFundingType = 'ทุนส่วนตัว';
+    }
+    
     // Populate form with member data
     document.getElementById('recordDate').value = member.recordDate || '';
-    document.getElementById('studentStatus').value = member.studentStatus || '';
+    document.getElementById('studentStatus').value = normalizedStudentStatus;
     document.getElementById('educationLevel').value = member.educationLevel || '';
     document.getElementById('major').value = member.major || '';
     document.getElementById('titlePrefix').value = member.titlePrefix || '';
@@ -369,11 +493,14 @@ function editMember(memberId) {
     document.getElementById('completionDate').value = member.completionDate || '';
     document.getElementById('university').value = member.university || '';
     document.getElementById('certificateLink').value = member.certificateLink || '';
-    document.getElementById('fundingType').value = member.fundingType || '';
+    document.getElementById('fundingType').value = normalizedFundingType;
     document.getElementById('scholarship').value = member.scholarship || '';
     document.getElementById('region').value = member.region || '';
     document.getElementById('status').value = member.status || '';
     document.getElementById('memberStatus').value = member.memberStatus || '';
+    
+    console.log('✅ [editMember] Form loaded - studentStatus:', document.getElementById('studentStatus').value);
+    console.log('✅ [editMember] Form loaded - fundingType:', document.getElementById('fundingType').value);
 
     // Trigger country code change event to update phone pattern
     const countryCodeSelect = document.getElementById('countryCode');
@@ -385,15 +512,19 @@ function editMember(memberId) {
     // Trigger student status change event to show/hide degree fields
     const studentStatusSelect = document.getElementById('studentStatus');
     if (studentStatusSelect) {
+      console.log('🔄 [editMember] Triggering studentStatus change event...');
       const statusEvent = new Event('change');
       studentStatusSelect.dispatchEvent(statusEvent);
+      console.log('✅ [editMember] After trigger - studentStatus:', document.getElementById('studentStatus').value);
     }
 
     // Trigger funding type change event to show/hide scholarship field
     const fundingTypeSelect = document.getElementById('fundingType');
     if (fundingTypeSelect) {
+      console.log('🔄 [editMember] Triggering fundingType change event...');
       const fundingEvent = new Event('change');
       fundingTypeSelect.dispatchEvent(fundingEvent);
+      console.log('✅ [editMember] After trigger - fundingType:', document.getElementById('fundingType').value);
     }
 
     // Store member ID in form for update
@@ -428,7 +559,8 @@ function deleteMemberConfirm(memberId) {
     db.deleteMember(memberId);
     renderMembersTable();
     renderEmailPage();
-    showAlert('ลบข้อมูลสมาชิกสำเร็จ', 'success');
+    // ใช้ showToast แทน showAlert เพื่อไม่ดัน UI และป้องกันการแสดงซ้ำ
+    showToast('ลบข้อมูลสมาชิกสำเร็จ', 'success');
   }
 }
 

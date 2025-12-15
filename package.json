@@ -1,0 +1,17 @@
+{
+  "name": "s2yunn",
+  "version": "1.0.0",
+  "description": "Thai Student Association Member Management System",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static site - no build needed'",
+    "start": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "member-management",
+    "thai-student",
+    "korea"
+  ],
+  "author": "s2yunn",
+  "license": "MIT"
+}

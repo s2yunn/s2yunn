@@ -28,9 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const lastPage = db.loadCurrentPage();
         switchPage(lastPage);
         
-        showAlert(`ยินดีต้อนรับ ${username}!`, 'success');
+        showToast(`ยินดีต้อนรับ ${username}!`, 'success');
       } else {
-        showAlert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+        showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
       }
     });
   }
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('loginForm').reset();
         
-        showAlert('ออกจากระบบสำเร็จ', 'success');
+        showToast('ออกจากระบบสำเร็จ', 'success');
       }
     });
   }
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
       closeMemberModal();
       
       const message = this.dataset.memberId ? 'อัปเดตข้อมูลสมาชิกสำเร็จ' : 'เพิ่มสมาชิกใหม่สำเร็จ';
-      showAlert(message, 'success');
+      showToast(message, 'success');
     });
   }
 
@@ -267,7 +267,7 @@ function loadDemoData() {
   renderEmailPage();
   renderStatisticsPage();
   
-  showAlert('โหลดข้อมูลตัวอย่างสำเร็จ', 'success');
+  showToast('โหลดข้อมูลตัวอย่างสำเร็จ', 'success');
 }
 
 // Add Demo Data Button to UI (Optional)
@@ -352,10 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Initial check
-    updateFieldRequirements();
-    
-    // Listen for changes
+    // Listen for changes (no initial check - will be triggered by editMember())
     studentStatusSelect.addEventListener('change', updateFieldRequirements);
   }
   
@@ -466,10 +463,382 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Initial check
-    updateScholarshipField();
-    
-    // Listen for changes
+    // Listen for changes (no initial check - will be triggered by editMember())
     fundingTypeSelect.addEventListener('change', updateScholarshipField);
+  }
+
+  // Excel Import Handler
+  const excelFileInput = document.getElementById('excelFileInput');
+  let tempExcelData = null;
+  
+  if (excelFileInput) {
+    excelFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Read first sheet with header=1 to get raw rows
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, {
+            header: 1,
+            defval: '',
+            raw: false
+          });
+          
+          if (rows.length < 2) {
+            showToast('ไม่พบข้อมูลในไฟล์ Excel', 'warning');
+            return;
+          }
+          
+          const [headerRow, ...dataRows] = rows;
+          
+          // Debug: แสดง header และ index
+          console.log('=== EXCEL DEBUG INFO ===');
+          console.log('HEADER ROW:', headerRow);
+          console.log('First data row (raw):', dataRows[0]);
+          
+          // Helper function to find column index
+          function findColumnIndex(acceptedNames) {
+            const lowerHeaders = headerRow.map(h => String(h || '').trim().toLowerCase());
+            for (const name of acceptedNames) {
+              const target = name.trim().toLowerCase();
+              const idx = lowerHeaders.indexOf(target);
+              if (idx !== -1) return idx;
+            }
+            return -1;
+          }
+          
+          // Find column indexes
+          const recordedDateIndex = findColumnIndex([
+            'วันที่เจ้าหน้าที่บันทึกข้อมูล',
+            'วันที่เจ้าหน้าที่บันทึก',
+            'วันที่บันทึกข้อมูล'
+          ]);
+          
+          console.log('recordedDateIndex =', recordedDateIndex);
+          if (recordedDateIndex >= 0 && dataRows[0]) {
+            console.log('first row recorded date cell:', dataRows[0][recordedDateIndex]);
+          }
+          console.log('========================');
+          
+          // Convert rows to objects
+          const jsonData = dataRows
+            .filter(row => row && row.length > 0)
+            .map(row => {
+              const obj = {};
+              headerRow.forEach((header, index) => {
+                const key = String(header || '').trim();
+                if (key) {
+                  obj[key] = row[index] !== undefined ? String(row[index]).trim() : '';
+                }
+              });
+              
+              // Add recordedDateRaw field
+              if (recordedDateIndex >= 0) {
+                obj['recordedDateRaw'] = row[recordedDateIndex] !== undefined ? String(row[recordedDateIndex]).trim() : '';
+              }
+              
+              return obj;
+            });
+          
+          if (jsonData.length === 0) {
+            showToast('ไม่พบข้อมูลในไฟล์ Excel', 'warning');
+            return;
+          }
+          
+          // Store data and show preview
+          tempExcelData = jsonData;
+          showExcelPreview(jsonData);
+          
+        } catch (error) {
+          console.error('Error reading Excel:', error);
+          showToast('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel: ' + error.message, 'error');
+        }
+      };
+      
+      reader.readAsArrayBuffer(file);
+      
+      // Reset input
+      e.target.value = '';
+    });
+  }
+
+  // Function to convert date format to "D ชื่อเดือนไทย YYYY"
+  // Supports: Excel serial number, Date object, "YYYY.MM.DD", "YYYY-MM-DD"
+  // Helper function to convert Excel date to YYYY-MM-DD format
+  function convertExcelDateToISO(raw) {
+    if (!raw || raw === '' || raw === '-') {
+      return '';
+    }
+
+    // 1) Excel serial number (pure number)
+    if (typeof raw === 'number' && !isNaN(raw)) {
+      const excelEpoch = new Date(1899, 11, 30);
+      const date = new Date(excelEpoch.getTime() + raw * 86400000);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+
+    // 2) String "YYYY.MM.DD" or "YYYY-MM-DD" or "YYYY/MM/DD"
+    const str = raw.toString().trim();
+    if (!str) return '';
+
+    const match = str.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+    if (match) {
+      const year = match[1];
+      const month = String(Number(match[2])).padStart(2, '0');
+      const day = String(Number(match[3])).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // 3) Date object
+    if (raw instanceof Date && !isNaN(raw.getTime())) {
+      const year = raw.getFullYear();
+      const month = String(raw.getMonth() + 1).padStart(2, '0');
+      const day = String(raw.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
+    }
+
+    return '';
+  }
+
+  function formatThaiDate(raw) {
+    if (raw === null || raw === undefined || raw === '' || raw === '-') {
+      return '-';
+    }
+    
+    const thaiMonths = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+    
+    // 1) Date object
+    if (raw instanceof Date && !isNaN(raw.getTime())) {
+      const year = raw.getFullYear();
+      const month = raw.getMonth() + 1;
+      const day = raw.getDate();
+      const monthName = thaiMonths[month - 1];
+      return `${day} ${monthName} ${year}`;
+    }
+    
+    // 2) Excel serial number (pure number)
+    if (typeof raw === 'number' && !isNaN(raw)) {
+      // Excel serial: days since 1899-12-30
+      const excelEpoch = new Date(1899, 11, 30);
+      const date = new Date(excelEpoch.getTime() + raw * 86400000);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const monthName = thaiMonths[month - 1];
+        return `${day} ${monthName} ${year}`;
+      }
+    }
+    
+    // 3) String "YYYY.MM.DD" or "YYYY-MM-DD" or "YYYY/MM/DD"
+    const str = raw.toString().trim();
+    if (!str) return '-';
+    
+    const match = str.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+    if (!match) return '-';
+    
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    
+    if (!year || month < 1 || month > 12 || day < 1 || day > 31) {
+      return '-';
+    }
+    
+    const monthName = thaiMonths[month - 1];
+    return `${day} ${monthName} ${year}`;
+  }
+
+  // Function to show Excel preview
+  window.showExcelPreview = function(data) {
+    const modal = document.getElementById('excelPreviewModal');
+    const tbody = document.getElementById('excelPreviewTableBody');
+    const countSpan = document.getElementById('previewDataCount');
+    
+    // Clear previous data
+    tbody.innerHTML = '';
+    countSpan.textContent = data.length;
+    
+    // Render preview rows - แสดงข้อมูลทุกคอลัมน์ตามลำดับในไฟล์ Excel
+    data.forEach((row, index) => {
+      const tr = document.createElement('tr');
+      
+      // อ่านข้อมูลจากแต่ละคอลัมน์ (รองรับทั้งมีและไม่มีช่องว่างท้าย)
+      const titlePrefix = row['คำนำหน้าชื่อ'] || '-';
+      const thaiName = row['ชื่อ-นามสกุล (ภาษาไทย)'] || '-';
+      const thaiNickname = row['ชื่อเล่น (ภาษาไทย)'] || '-';
+      const englishName = row['ชื่อ-นามสกุล (ภาษาอังกฤษ)'] || '-';
+      const englishNickname = row['ชื่อเล่น (ภาษาอังกฤษ)'] || '-';
+      
+      // วันเกิด
+      const rawDateOfBirth = row['วัน/เดือน/ปีเกิด '] || row['วัน/เดือน/ปีเกิด'];
+      const dateOfBirth = rawDateOfBirth ? formatThaiDate(rawDateOfBirth) : '-';
+      
+      const email = row['อีเมล'] || '-';
+      const phone = row['โทรศัพท์'] || '-';
+      const address = row['ที่อยู่ปัจจุบัน'] || '-';
+      
+      // สถานภาพ
+      const studentStatus = row['สถานภาพปัจจุบัน'] || '-';
+      const studentStatusDisplay = studentStatus === 'degree' ? 'นักเรียนระดับชั้นปริญญา' : 
+                                     studentStatus === 'language' ? 'นักเรียนภาษา' : studentStatus;
+      
+      const educationLevel = row['ระดับการศึกษา'] || '-';
+      const major = row['สาขาวิชา'] || '-';
+      const university = row['มหาวิทยาลัย'] || '-';
+      const region = row['ภูมิภาค'] || '-';
+      
+      // วันสำเร็จการศึกษา
+      const rawCompletionDate = row['วันที่สำเร็จการศึกษา'];
+      const completionDate = rawCompletionDate ? formatThaiDate(rawCompletionDate) : '-';
+      
+      const fundingType = row['ช่องทางการศึกษาต่อที่เกาหลี'] || '-';
+      const scholarship = row['ทุนการศึกษา'] || '-';
+      const certificateLink = row['เอกสารรับรอง'] || '-';
+      
+      // วันที่บันทึกข้อมูล - ใช้ recordedDateRaw ที่ดึงมาจากคอลัมน์จริง
+      const rawRecordDate = row['recordedDateRaw'] || row['วันที่เจ้าหน้าที่บันทึกข้อมูล'] || row['วันที่บันทึกข้อมูล'];
+      const recordDate = rawRecordDate ? formatThaiDate(rawRecordDate) : '-';
+      
+      tr.innerHTML = `
+        <td style="text-align: center; position: sticky; left: 0; background: white; font-weight: bold;">${index + 1}</td>
+        <td>${titlePrefix}</td>
+        <td>${thaiName}</td>
+        <td>${thaiNickname}</td>
+        <td>${englishName}</td>
+        <td>${englishNickname}</td>
+        <td>${dateOfBirth}</td>
+        <td>${email}</td>
+        <td>${phone}</td>
+        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${address}</td>
+        <td>${studentStatusDisplay}</td>
+        <td>${educationLevel}</td>
+        <td>${major}</td>
+        <td>${university}</td>
+        <td>${region}</td>
+        <td>${completionDate}</td>
+        <td>${fundingType}</td>
+        <td>${scholarship}</td>
+        <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${certificateLink}</td>
+        <td>${recordDate}</td>
+      `;
+      
+      tbody.appendChild(tr);
+    });
+    
+    // Show modal
+    modal.style.display = 'block';
+  };
+
+  // Function to close Excel preview modal
+  window.closeExcelPreviewModal = function() {
+    const modal = document.getElementById('excelPreviewModal');
+    modal.style.display = 'none';
+    tempExcelData = null;
+  };
+
+  // Function to confirm and import Excel data
+  window.confirmExcelImport = function() {
+    if (!tempExcelData) {
+      showToast('ไม่พบข้อมูลที่จะนำเข้า', 'warning');
+      return;
+    }
+    
+    // Import the data
+    importExcelData(tempExcelData);
+    
+    // Close modal
+    closeExcelPreviewModal();
+  };
+
+  // Function to import Excel data
+  function importExcelData(data) {
+    let successCount = 0;
+    let errorCount = 0;
+    
+    data.forEach((row, index) => {
+      try {
+        // Get raw date values from Excel - ใช้ recordedDateRaw ที่ดึงมาจากคอลัมน์จริง
+        const rawRecordDate = row['recordedDateRaw'] || row['วันที่เจ้าหน้าที่บันทึกข้อมูล'] || row['วันที่บันทึกข้อมูล'] || row['recordDate'];
+        const rawDateOfBirth = row['วัน/เดือน/ปีเกิด '] || row['วัน/เดือน/ปีเกิด'] || row['dateOfBirth'];
+        const rawCompletionDate = row['วันที่สำเร็จการศึกษา'] || row['completionDate'];
+
+        // Map Excel columns to member data (รองรับทั้งมีและไม่มีช่องว่างท้าย)
+        const memberData = {
+          recordDate: convertExcelDateToISO(rawRecordDate) || new Date().toISOString().split('T')[0],
+          titlePrefix: row['คำนำหน้าชื่อ'] || row['titlePrefix'] || '',
+          thaiName: row['ชื่อ-นามสกุล (ภาษาไทย)'] || row['thaiName'] || '',
+          thaiNickname: row['ชื่อเล่น (ภาษาไทย)'] || row['thaiNickname'] || '',
+          englishName: row['ชื่อ-นามสกุล (ภาษาอังกฤษ)'] || row['englishName'] || '',
+          englishNickname: row['ชื่อเล่น (ภาษาอังกฤษ)'] || row['englishNickname'] || '',
+          dateOfBirth: convertExcelDateToISO(rawDateOfBirth) || '',
+          countryCode: row['รหัสประเทศ'] || row['countryCode'] || '+82',
+          phone: row['โทรศัพท์'] || row['phone'] || '',
+          email: row['อีเมล'] || row['email'] || '',
+          address: row['ที่อยู่ปัจจุบัน'] || row['address'] || '',
+          studentStatus: row['สถานภาพปัจจุบัน'] || row['studentStatus'] || 'degree',
+          educationLevel: row['ระดับการศึกษา'] || row['educationLevel'] || '',
+          major: row['สาขาวิชา'] || row['major'] || '',
+          completionDate: convertExcelDateToISO(rawCompletionDate) || '',
+          university: row['มหาวิทยาลัย'] || row['university'] || '',
+          fundingType: row['ช่องทางการศึกษาต่อที่เกาหลี'] || row['ช่องทางการศึกษา'] || row['fundingType'] || '',
+          scholarship: row['ทุนการศึกษา'] || row['scholarship'] || '',
+          region: row['ภูมิภาค'] || row['region'] || '',
+          certificateLink: row['เอกสารรับรอง'] || row['certificateLink'] || ''
+        };
+        
+        // Validate critical fields only (อนุญาตให้นำเข้าได้แม้ข้อมูลไม่ครบ)
+        // ต้องมีอย่างน้อยชื่อไทยหรืออังกฤษอย่างใดอย่างหนึ่ง
+        if (!memberData.thaiName && !memberData.englishName) {
+          console.warn('Skipped row - no name:', row);
+          errorCount++;
+          return;
+        }
+        
+        // Calculate status
+        memberData.status = db.calculateStatus(memberData.completionDate);
+        memberData.memberStatus = db.calculateMemberStatus(memberData.status);
+        
+        // Add to database (แม้ข้อมูลไม่ครบก็นำเข้าได้)
+        db.addMember(memberData);
+        successCount++;
+        
+      } catch (error) {
+        console.error('Error importing row:', error);
+        errorCount++;
+      }
+    });
+    
+    // Show results
+    if (errorCount > 0) {
+      showToast(`นำเข้าสำเร็จ: ${successCount} คน, ล้มเหลว: ${errorCount} คน`, 'warning');
+    } else {
+      showToast(`นำเข้าสำเร็จ: ${successCount} คน`, 'success');
+    }
+    
+    // Refresh all pages
+    renderMembersTable();
+    renderEmailPage();
+    renderStatisticsPage();
+    renderUpdatePage();
   }
 });
